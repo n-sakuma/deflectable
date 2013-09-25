@@ -43,7 +43,7 @@ There was both a :blanklist and :whitelist.
 
     def set_rails_configure!
       return unless defined?(Rails)
-      conf = YAML.load_file(Rails.root.join('config/deflect.yml'))
+      conf = YAML.load_file(Rails.root.join('config/deflectable.yml'))
       self.options = options.merge(conf).merge(:logger => Rails.logger)
     rescue => e
       log e.message
