@@ -1,3 +1,7 @@
 module Deflectable
-  VERSION = "0.1.0"
+  major  = 0
+  minore = 2
+  patch  = 2
+
+  VERSION = [major, minore, patch].join('.')
 end
