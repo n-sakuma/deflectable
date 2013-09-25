@@ -68,7 +68,7 @@ There was both a :blanklist and :whitelist.
       when :whitelist
         allowed?(env) ? false : true
       when :blacklist
-        denied?(env) ? true : false
+        denied?(env)
       else
         false
       end
@@ -80,7 +80,7 @@ There was both a :blanklist and :whitelist.
     end
 
     def denied?(env)
-      return true if options[:blacklist].empty?
+      return false if options[:blacklist].empty?
       options[:blacklist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
