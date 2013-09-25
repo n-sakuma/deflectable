@@ -1,21 +1,15 @@
-require 'thread'
-
 module Deflectable
   class Watcher
     attr_accessor :options
 
     def initialize(app, options = {})
       @app = app
-      @remote_addr_map = {}
       # TODO: extract rails conf
       conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
       @options = {
         :log => false,
         :log_format => 'deflect(%s): %s',
         :log_date_format => '%m/%d/%Y',
-        :request_threshold => 100,
-        :interval => 5,
-        :block_duration => 900,
         :whitelist => [],
         :blacklist => [],
       }.merge(conf).merge(options)
