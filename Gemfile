@@ -5,6 +5,9 @@ source "https://rubygems.org"
 # development dependencies will be added by default to the :development group.
 
 group :development do
+  gem "rails", "~> 4.0.0"
+  gem "sqlite3"
+
   gem 'debugger'
   gem 'pry-rails'
   # gem 'thin'
