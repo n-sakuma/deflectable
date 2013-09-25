@@ -4,6 +4,7 @@ module Deflectable
 
     def initialize(app, build_options = {})
       @app = app
+      @filtering = nil
       # TODO: extract rails conf
       conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
       @options = {
@@ -32,6 +33,8 @@ There was both a :blanklist and :whitelist.
 `Please select the :blacklist or :whitelist.'
         EOS
       end
+      @filtering = :whitelist unless options[:whitelist].empty?
+      @filtering = :blacklist unless options[:blacklist].empty?
     end
 
     def reject!
@@ -52,11 +55,13 @@ There was both a :blanklist and :whitelist.
     end
 
     def detect?(env)
-      @remote_addr = env['REMOTE_ADDR']
-      if !options[:whitelist].empty?
+      case @filtering
+      when :whitelist
         allowed?(env) ? false : true
-      else
+      when :blacklist
         denied?(env) ? true : false
+      else
+        false
       end
     end
 
