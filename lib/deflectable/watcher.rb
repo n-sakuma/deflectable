@@ -5,7 +5,6 @@ module Deflectable
     attr_accessor :options
 
     def initialize(app, options = {})
-      @mutex = Mutex.new
       @app = app
       @remote_addr_map = {}
       # TODO: extract rails conf
@@ -53,7 +52,6 @@ module Deflectable
       else
         return true  if options[:blacklist].include? @remote_addr
       end
-      @mutex.synchronize { watch }
     end
 
     def allowed?(env)
@@ -61,55 +59,6 @@ module Deflectable
       options[:whitelist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
-    def watch
-      increment_requests
-      clear! if watch_expired? and not blocked?
-      clear! if blocked? and block_expired?
-      block! if watching? and exceeded_request_threshold?
-      blocked?
-    end
-
-    def map
-      @remote_addr_map[@remote_addr] ||= {
-        :expires => Time.now + options[:interval],
-        :requests => 0
-      }
-    end
-
-    def block!
-      return if blocked?
-      log "blocked #{@remote_addr}"
-      map[:block_expires] = Time.now + options[:block_duration]
-    end
-
-    def blocked?
-      map.has_key? :block_expires
-    end
-
-    def block_expired?
-      map[:block_expires] < Time.now rescue false
-    end
-
-    def watching?
-      @remote_addr_map.has_key? @remote_addr
-    end
-
-    def clear!
-      return unless watching?
-      log "released #{@remote_addr}" if blocked?
-      @remote_addr_map.delete @remote_addr
-    end
-
-    def increment_requests
-      map[:requests] += 1
-    end
-
-    def exceeded_request_threshold?
-      map[:requests] > options[:request_threshold]
-    end
-
-    def watch_expired?
-      map[:expires] <= Time.now
     end
 
     def log message
