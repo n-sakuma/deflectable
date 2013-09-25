@@ -4,6 +4,7 @@ require 'rspec'
 require 'rack/test'
 require 'rack/mock'
 require 'deflectable'
+require 'pry'
 # require 'mocha'
 
 # Requires supporting files with custom matchers and macros, etc,

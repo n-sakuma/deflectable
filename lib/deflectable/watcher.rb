@@ -7,9 +7,11 @@ module Deflectable
     def initialize(app, options = {})
       @mutex = Mutex.new
       @app = app
+      @remote_addr_map = {}
+      # TODO: extract rails conf
       conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
       @options = {
-        :log => true,
+        :log => false,
         :log_format => 'deflect(%s): %s',
         :log_date_format => '%m/%d/%Y',
         :request_threshold => 100,
@@ -17,7 +19,8 @@ module Deflectable
         :block_duration => 900,
         :whitelist => [],
         :blacklist => [],
-      }.merge(conf)
+      }.merge(conf).merge(options)
+      # TODO: conf check
     end
 
     def call(env)
@@ -30,16 +33,32 @@ module Deflectable
       res = Rack::Response.new do |r|
         r.status = 403
         r['Content-Type'] = 'text/html;charset=utf-8'
-        r.write File.read(Rails.root.join('public/403.html'))
+        r.write error_content
       end
       res.finish
     end
 
+    def error_content
+      if defined? Rails
+        File.read(Rails.root.join('public/403.html'))
+      else
+        '<p>failed</p>'
+      end
+    end
+
     def detect?(env)
       @remote_addr = env['REMOTE_ADDR']
-      return false if options[:whitelist].include? @remote_addr
-      return true  if options[:blacklist].include? @remote_addr
+      if !options[:whitelist].empty?
+        return (allowed?(env) ? false : true)
+      else
+        return true  if options[:blacklist].include? @remote_addr
+      end
       @mutex.synchronize { watch }
+    end
+
+    def allowed?(env)
+      return true if options[:whitelist].empty?
+      options[:whitelist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
     def watch
