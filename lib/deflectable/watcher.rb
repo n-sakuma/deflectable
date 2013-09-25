@@ -5,11 +5,12 @@ module Deflectable
     attr_accessor :options
 
     def initialize(app, options = {})
-      @mutex = Mutex.new
       @app = app
+      @remote_addr_map = {}
+      # TODO: extract rails conf
       conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
       @options = {
-        :log => true,
+        :log => false,
         :log_format => 'deflect(%s): %s',
         :log_date_format => '%m/%d/%Y',
         :request_threshold => 100,
@@ -17,7 +18,8 @@ module Deflectable
         :block_duration => 900,
         :whitelist => [],
         :blacklist => [],
-      }.merge(conf)
+      }.merge(conf).merge(options)
+      # TODO: conf check
     end
 
     def call(env)
@@ -30,67 +32,36 @@ module Deflectable
       res = Rack::Response.new do |r|
         r.status = 403
         r['Content-Type'] = 'text/html;charset=utf-8'
-        r.write File.read(Rails.root.join('public/403.html'))
+        r.write error_content
       end
       res.finish
     end
 
+    def error_content
+      if defined? Rails
+        File.read(Rails.root.join('public/403.html'))
+      else
+        '<p>failed</p>'
+      end
+    end
+
     def detect?(env)
       @remote_addr = env['REMOTE_ADDR']
-      return false if options[:whitelist].include? @remote_addr
-      return true  if options[:blacklist].include? @remote_addr
-      @mutex.synchronize { watch }
+      if !options[:whitelist].empty?
+        allowed?(env) ? false : true
+      else
+        denied?(env) ? true : false
+      end
     end
 
-    def watch
-      increment_requests
-      clear! if watch_expired? and not blocked?
-      clear! if blocked? and block_expired?
-      block! if watching? and exceeded_request_threshold?
-      blocked?
+    def allowed?(env)
+      return true if options[:whitelist].empty?
+      options[:whitelist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
-    def map
-      @remote_addr_map[@remote_addr] ||= {
-        :expires => Time.now + options[:interval],
-        :requests => 0
-      }
-    end
-
-    def block!
-      return if blocked?
-      log "blocked #{@remote_addr}"
-      map[:block_expires] = Time.now + options[:block_duration]
-    end
-
-    def blocked?
-      map.has_key? :block_expires
-    end
-
-    def block_expired?
-      map[:block_expires] < Time.now rescue false
-    end
-
-    def watching?
-      @remote_addr_map.has_key? @remote_addr
-    end
-
-    def clear!
-      return unless watching?
-      log "released #{@remote_addr}" if blocked?
-      @remote_addr_map.delete @remote_addr
-    end
-
-    def increment_requests
-      map[:requests] += 1
-    end
-
-    def exceeded_request_threshold?
-      map[:requests] > options[:request_threshold]
-    end
-
-    def watch_expired?
-      map[:expires] <= Time.now
+    def denied?(env)
+      return true if options[:blacklist].empty?
+      options[:blacklist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
     def log message
