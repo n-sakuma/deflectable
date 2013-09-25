@@ -7,11 +7,11 @@ require "deflectable/version"
 Gem::Specification.new do |s|
   s.name        = "deflectable"
   s.version     = Deflectable::VERSION
-  s.authors     = ["TODO: Your name"]
-  s.email       = ["TODO: Your email"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of Deflectable."
-  s.description = "TODO: Description of Deflectable."
+  s.authors     = ["Naohiro Sakuma"]
+  s.email       = ["nao.bear@gmail.com"]
+  s.homepage    = "https://github.com/n-sakuma/deflectable"
+  s.summary     = "Access controll by IP Address."
+  s.description = "Access controll by IP Address."
 
   s.files = Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
