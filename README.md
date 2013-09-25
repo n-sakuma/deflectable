@@ -33,7 +33,7 @@ $ rails generate deflectable:install
 ```ruby
 # config.ru
 
-usaue Deflectable::Watcher
+use Deflectable::Watcher
 ```
 
 
