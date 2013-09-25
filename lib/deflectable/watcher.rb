@@ -58,11 +58,9 @@ There was both a :blanklist and :whitelist.
     end
 
     def error_content
-      if defined? Rails
-        File.read(Rails.root.join('public/403.html'))
-      else
-        '<p>failed</p>'
-      end
+      File.read(Rails.root.join('public/403.html'))
+    rescue
+      '<p>failed</p>'
     end
 
     def detect?(env)
