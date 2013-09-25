@@ -48,9 +48,9 @@ module Deflectable
     def detect?(env)
       @remote_addr = env['REMOTE_ADDR']
       if !options[:whitelist].empty?
-        return (allowed?(env) ? false : true)
+        allowed?(env) ? false : true
       else
-        return true  if options[:blacklist].include? @remote_addr
+        denied?(env) ? true : false
       end
     end
 
@@ -59,6 +59,9 @@ module Deflectable
       options[:whitelist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
+    def denied?(env)
+      return true if options[:blacklist].empty?
+      options[:blacklist].include?(env['REMOTE_ADDR']) ? true : false
     end
 
     def log message
