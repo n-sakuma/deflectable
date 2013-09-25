@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    deflectable (0.2.2)
+    deflectable (0.2.4)
       rack (>= 0.9.1)
 
 GEM
