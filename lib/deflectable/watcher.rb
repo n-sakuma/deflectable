@@ -6,8 +6,6 @@ module Deflectable
     def initialize(app, build_options = {})
       @app = app
       @filtering = nil
-      # TODO: extract rails conf
-      conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
       @options = {
         :log => false,
         :logger => ::Logger.new('deflector.log'),
@@ -15,7 +13,7 @@ module Deflectable
         :log_date_format => '%m/%d/%Y',
         :whitelist => [],
         :blacklist => [],
-      }.merge(conf).merge(build_options)
+      }.merge(build_options)
       configure_check!
     end
 
@@ -30,14 +28,23 @@ module Deflectable
 
 
     def configure_check!
-      if (not options[:whitelist].empty?) and (not options[:blacklist].empty?)
-        raise <<-'EOS'
+      if (not @options[:whitelist].empty?) and (not @options[:blacklist].empty?)
+        raise <<-EOS
 There was both a :blanklist and :whitelist.
 `Please select the :blacklist or :whitelist.'
         EOS
       end
-      @filtering = :whitelist unless options[:whitelist].empty?
-      @filtering = :blacklist unless options[:blacklist].empty?
+      @filtering = :whitelist unless @options[:whitelist].empty?
+      @filtering = :blacklist unless @options[:blacklist].empty?
+      set_rails_configure!
+    end
+
+    def set_rails_configure!
+      return unless defined? Rails
+      conf = YAML.load_file(Rails.root.join('config/deflect.yml'))
+      @options = @options.merge(conf).merge(:logger => Rails.logger)
+    rescue => e
+      log e.message
     end
 
     def reject!(env)
