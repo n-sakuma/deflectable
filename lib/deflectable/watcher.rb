@@ -53,6 +53,7 @@ There was both a :blanklist and :whitelist.
         r['Content-Type'] = 'text/html;charset=utf-8'
         r.write error_content
       end
+      log "Rejected(#{@filtering}): #{env['REMOTE_ADDR']}"
       res.finish
     end
 
