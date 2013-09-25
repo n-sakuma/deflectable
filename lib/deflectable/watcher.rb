@@ -2,7 +2,7 @@ module Deflectable
   class Watcher
     attr_accessor :options
 
-    def initialize(app, options = {})
+    def initialize(app, build_options = {})
       @app = app
       # TODO: extract rails conf
       conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
@@ -12,14 +12,26 @@ module Deflectable
         :log_date_format => '%m/%d/%Y',
         :whitelist => [],
         :blacklist => [],
-      }.merge(conf).merge(options)
-      # TODO: conf check
+      }.merge(conf).merge(build_options)
+      configure_check!
     end
 
     def call(env)
       return reject! if detect?(env)
       status, headers, body = @app.call(env)
       [status, headers, body]
+    end
+
+
+    private
+
+    def configure_check!
+      if (not options[:whitelist].empty?) and (not options[:blacklist].empty?)
+        raise <<-'EOS'
+There was both a :blanklist and :whitelist.
+`Please select the :blacklist or :whitelist.'
+        EOS
+      end
     end
 
     def reject!
