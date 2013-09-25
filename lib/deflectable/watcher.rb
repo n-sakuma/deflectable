@@ -8,7 +8,7 @@ module Deflectable
       @filtering = nil
       @options = {
         :log => false,
-        :logger => ::Logger.new('deflector.log'),
+        :logger => nil,
         :log_format => 'deflect(%s): %s',
         :log_date_format => '%m/%d/%Y',
         :whitelist => [],
@@ -26,23 +26,25 @@ module Deflectable
 
     private
 
-
     def configure_check!
-      if (not @options[:whitelist].empty?) and (not @options[:blacklist].empty?)
+      set_rails_configure!
+      if (not options[:whitelist].empty?) and (not options[:blacklist].empty?)
         raise <<-EOS
 There was both a :blanklist and :whitelist.
 `Please select the :blacklist or :whitelist.'
         EOS
       end
-      @filtering = :whitelist unless @options[:whitelist].empty?
-      @filtering = :blacklist unless @options[:blacklist].empty?
-      set_rails_configure!
+      @filtering = :whitelist unless options[:whitelist].empty?
+      @filtering = :blacklist unless options[:blacklist].empty?
+      unless options[:logger]
+        self.options[:logger] = Logger.new('deflecter.log')
+      end
     end
 
     def set_rails_configure!
-      return unless defined? Rails
+      return unless defined?(Rails)
       conf = YAML.load_file(Rails.root.join('config/deflect.yml'))
-      @options = @options.merge(conf).merge(:logger => Rails.logger)
+      self.options = options.merge(conf).merge(:logger => Rails.logger)
     rescue => e
       log e.message
     end
@@ -89,7 +91,7 @@ There was both a :blanklist and :whitelist.
       if logger = options[:logger]
         logger.send(level, message)
       else
-        puts(options[:log_format] % [Time.now.strftime(options[:log_date_format]), message])
+        STDOUT.puts(options[:log_format] % [Time.now.strftime(options[:log_date_format]), message])
       end
     end
   end
