@@ -1,7 +1,7 @@
 module Deflectable
   major  = 0
-  minore = 3
-  patch  = 1
+  minore = 5
+  patch  = 0
 
   VERSION = [major, minore, patch].join('.')
 end
