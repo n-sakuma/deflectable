@@ -18,7 +18,7 @@ module Deflectable
     end
 
     def call(env)
-      return reject!(env) if detect?(env)
+      return reject!(env) unless permit?(env)
       status, headers, body = @app.call(env)
       [status, headers, body]
     end
@@ -34,8 +34,8 @@ There was both a :blanklist and :whitelist.
 `Please select the :blacklist or :whitelist.'
         EOS
       end
-      @filtering = :whitelist unless options[:whitelist].empty?
-      @filtering = :blacklist unless options[:blacklist].empty?
+      @filtering = Whitelist.new(options) unless options[:whitelist].empty?
+      @filtering = Blacklist.new(options) unless options[:blacklist].empty?
       unless options[:logger]
         self.options[:logger] = Logger.new('deflecter.log')
       end
@@ -65,25 +65,9 @@ There was both a :blanklist and :whitelist.
       '<p>failed</p>'
     end
 
-    def detect?(env)
-      case @filtering
-      when :whitelist
-        allowed?(env) ? false : true
-      when :blacklist
-        denied?(env)
-      else
-        false
-      end
-    end
-
-    def allowed?(env)
-      return true if options[:whitelist].empty?
-      options[:whitelist].include?(env['REMOTE_ADDR']) ? true : false
-    end
-
-    def denied?(env)
-      return false if options[:blacklist].empty?
-      options[:blacklist].include?(env['REMOTE_ADDR']) ? true : false
+    def permit?(env)
+      return true unless @filtering
+      @filtering.permit?(env['REMOTE_ADDR'])
     end
 
     def log(message, level = :info)
