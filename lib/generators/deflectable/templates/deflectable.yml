@@ -1,7 +1,5 @@
-# :log: true  # default: false
-# :whitelist:
-#   - '127.0.0.1'
-#   - '10.20.30.40'
-# :blacklist:
-#   - '12.12.12.12'
-#   - '90.80.70.60'
+# :log: true         # default: false
+# :whitelist:        # or :blacklist
+#   - 192.168.1.1
+#   - 10.20.30.0/24  # ip range
+#   - 3ffe:505:2::1  # IPv6 supported
