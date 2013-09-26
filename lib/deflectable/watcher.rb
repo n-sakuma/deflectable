@@ -1,101 +1,82 @@
-require 'thread'
-
+require 'logger'
 module Deflectable
   class Watcher
     attr_accessor :options
 
-    def initialize(app, options = {})
-      @mutex = Mutex.new
+    def initialize(app, build_options = {})
       @app = app
-      conf = YAML.load_file(Rails.root.join('config/deflect.yml')) rescue {}
+      @filtering = nil
       @options = {
-        :log => true,
+        :log => false,
+        :logger => nil,
         :log_format => 'deflect(%s): %s',
         :log_date_format => '%m/%d/%Y',
-        :request_threshold => 100,
-        :interval => 5,
-        :block_duration => 900,
         :whitelist => [],
         :blacklist => [],
-      }.merge(conf)
+      }.merge(build_options)
+      configure_check!
     end
 
     def call(env)
-      return reject! if detect?(env)
+      return reject!(env) unless permit?(env)
       status, headers, body = @app.call(env)
       [status, headers, body]
     end
 
-    def reject!
+
+    private
+
+    def configure_check!
+      set_rails_configure!
+      if (not options[:whitelist].empty?) and (not options[:blacklist].empty?)
+        raise <<-EOS
+There was both a :blanklist and :whitelist.
+`Please select the :blacklist or :whitelist.'
+        EOS
+      end
+      @filtering = Whitelist.new(options) unless options[:whitelist].empty?
+      @filtering = Blacklist.new(options) unless options[:blacklist].empty?
+      unless options[:logger]
+        self.options[:logger] = Logger.new('deflecter.log')
+      end
+    end
+
+    def set_rails_configure!
+      return unless defined?(Rails)
+      conf = YAML.load_file(Rails.root.join('config/deflectable.yml'))
+      self.options = options.merge(conf).merge(:logger => Rails.logger)
+    rescue => e
+      log e.message
+    end
+
+    def reject!(env)
       res = Rack::Response.new do |r|
         r.status = 403
         r['Content-Type'] = 'text/html;charset=utf-8'
-        r.write File.read(Rails.root.join('public/403.html'))
+        r.write error_content
       end
+      log "Rejected(#{@filtering}): #{env['REMOTE_ADDR']}"
       res.finish
     end
 
-    def detect?(env)
-      @remote_addr = env['REMOTE_ADDR']
-      return false if options[:whitelist].include? @remote_addr
-      return true  if options[:blacklist].include? @remote_addr
-      @mutex.synchronize { watch }
+    def error_content
+      File.read(Rails.root.join('public/403.html'))
+    rescue
+      '<p>failed</p>'
     end
 
-    def watch
-      increment_requests
-      clear! if watch_expired? and not blocked?
-      clear! if blocked? and block_expired?
-      block! if watching? and exceeded_request_threshold?
-      blocked?
+    def permit?(env)
+      return true unless @filtering
+      @filtering.permit?(env['REMOTE_ADDR'])
     end
 
-    def map
-      @remote_addr_map[@remote_addr] ||= {
-        :expires => Time.now + options[:interval],
-        :requests => 0
-      }
-    end
-
-    def block!
-      return if blocked?
-      log "blocked #{@remote_addr}"
-      map[:block_expires] = Time.now + options[:block_duration]
-    end
-
-    def blocked?
-      map.has_key? :block_expires
-    end
-
-    def block_expired?
-      map[:block_expires] < Time.now rescue false
-    end
-
-    def watching?
-      @remote_addr_map.has_key? @remote_addr
-    end
-
-    def clear!
-      return unless watching?
-      log "released #{@remote_addr}" if blocked?
-      @remote_addr_map.delete @remote_addr
-    end
-
-    def increment_requests
-      map[:requests] += 1
-    end
-
-    def exceeded_request_threshold?
-      map[:requests] > options[:request_threshold]
-    end
-
-    def watch_expired?
-      map[:expires] <= Time.now
-    end
-
-    def log message
+    def log(message, level = :info)
       return unless options[:log]
-      options[:log].puts(options[:log_format] % [Time.now.strftime(options[:log_date_format]), message])
+      if logger = options[:logger]
+        logger.send(level, message)
+      else
+        STDOUT.puts(options[:log_format] % [Time.now.strftime(options[:log_date_format]), message])
+      end
     end
   end
 end

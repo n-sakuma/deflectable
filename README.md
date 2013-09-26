@@ -1,6 +1,6 @@
 # deflectable
 
-RailsアプリにIP制限 (ブランクリスト、ホワイトリスト)を適用
+RailsアプリにIP制限 (ブラックリスト、ホワイトリスト)を適用
 
 ## Installation
 
@@ -22,21 +22,18 @@ Or install it yourself as:
 ### Configure
 
 ```bash
-# TODO:
-# Not Yet implement
 $ rails generate deflectable:install
 ```
 
-### Prepare 403.html
-
-In public/403.html
+* generated 'config/deflectable.yml'
+* generated 'public/403.html'
 
 ### Modified config.ru
 
 ```ruby
 # config.ru
 
-usaue Deflectable::Watcher
+use Deflectable::Watcher
 ```
 
 
