@@ -24,9 +24,22 @@ Or install it yourself as:
 ```bash
 $ rails generate deflectable:install
 ```
+Generated files
 
-* generated 'config/deflectable.yml'
-* generated 'public/403.html'
+* config/deflectable.yml
+* public/403.html
+
+#### deflectable.yml
+
+```yaml
+# config/deflectable.yml
+
+:log: true         # default false
+:whitelist:        # or :blacklist
+  - 192.168.1.1
+  - 10.20.30.0/24  # ip range
+  - 3ffe:505:2::1  # IPv6 supported
+```
 
 ### Modified config.ru
 
@@ -35,12 +48,3 @@ $ rails generate deflectable:install
 
 use Deflectable::Watcher
 ```
-
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
