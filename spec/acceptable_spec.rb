@@ -4,15 +4,23 @@ describe Deflectable::Watcher do
   context 'whitelist' do
     before do
       @app = lambda { |env| [200, { 'Content-Type' => 'text/plain' }, ['cookies']] }
-      @allow_ip    = '111.111.111.111'
-      @allow_ip_range = '111.111.111.0/24'
-      @not_in_list = '123.123.123.123'
-      @invalid_ip  = '333.333.333.333'
-      @deflectable = mock_deflecter(@app, {:whitelist => [@allow_ip]})
+      @allow_ip       =  '111.111.111.111'
+      @allow_ipv6     =  '3ffe:505:2::1'
+      @allow_ip_range =  '111.111.111.0/24'
+      @not_in_list    =  '123.123.123.123'
+      @invalid_ip     =  '333.333.333.333'
+      @deflectable    =  mock_deflecter(@app, {:whitelist => [@allow_ip, @allow_ipv6]})
     end
 
     it 'successfully' do
       status, headers, body = @deflectable.call(mock_env(@allow_ip))
+      status.should == 200
+      headers.should == { 'Content-Type' => 'text/plain' }
+      body.should == ['cookies']
+    end
+
+    it 'successfully(IPv6)' do
+      status, headers, body = @deflectable.call(mock_env(@allow_ipv6))
       status.should == 200
       headers.should == { 'Content-Type' => 'text/plain' }
       body.should == ['cookies']
@@ -90,7 +98,7 @@ describe Deflectable::Watcher do
     end
 
     it 'invalid ip is ignore' do
-      deflectable = mock_deflecter(@app, {:blacklist=> [@invalid_ip]})
+      deflectable = mock_deflecter(@app, {:blacklist => [@invalid_ip]})
       blacklist = deflectable.instance_variable_get(:@filtering).instance_variable_get(:@list)
       blacklist.should be_empty
     end
