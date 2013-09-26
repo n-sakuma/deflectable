@@ -1,9 +1,10 @@
-class Deflectable::Blacklist
+class Deflectable::Blacklist < Deflectable::Filtering
+
   def initialize(options)
-    @list = options[:blacklist]
+    super(options[:blacklist])
   end
 
-  def permit?(ip)
-    not @list.include?(ip)
+  def permit?(request_ip)
+    not include?(request_ip)
   end
 end
