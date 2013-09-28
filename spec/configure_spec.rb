@@ -30,6 +30,19 @@ describe Deflectable::Watcher do
       end.instance_variable_get(:@filtering).instance_variable_get(:@list)
       whitelist.should_not be_empty
     end
+  end
 
+  context 'config path' do
+    before do
+      @app = lambda { |env| [200, { 'Content-Type' => 'text/plain' }, ['cookies']] }
+      @path = '/tmp/config.yml'
+    end
+
+    it 'apply config for block' do
+      deflectable = Deflectable::Watcher.new @app, {} do
+        {:config_path => @path}
+      end
+      deflectable.options[:config_path].should_not be_nil
+    end
   end
 end

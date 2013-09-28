@@ -38,13 +38,19 @@ Generated files
 #### deflectable.yml
 
 ```yaml
-# config/deflectable.yml
+### config/deflectable.yml
 
-:log: true         # default false
-:whitelist:        # or :blacklist
+# default false
+:log: true
+
+# :whitelist or :blacklist
+:whitelist:
   - 192.168.1.1
   - 10.20.30.0/24  # ip range
   - 3ffe:505:2::1  # IPv6 supported
+
+# default: config/deflectable.yml (Rails.root)
+:config_path: Rails.root.join('vendor/app/config/setting.yml')
 ```
 
 
