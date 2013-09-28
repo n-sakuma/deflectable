@@ -3,7 +3,7 @@ module Deflectable
   class Watcher
     attr_accessor :options
 
-    def initialize(app, build_options = {})
+    def initialize(app, build_options={}, &block)
       @app = app
       @filtering = nil
       @options = {
@@ -13,7 +13,9 @@ module Deflectable
         :log_date_format => '%m/%d/%Y',
         :whitelist => [],
         :blacklist => [],
+        :config_path => nil,
       }.merge(build_options)
+      @options = @options.merge(block.call) if block_given?
       configure_check!
     end
 
@@ -27,7 +29,7 @@ module Deflectable
     private
 
     def configure_check!
-      set_rails_configure!
+      load_config_file!
       if (not options[:whitelist].empty?) and (not options[:blacklist].empty?)
         raise <<-EOS
 There was both a :blanklist and :whitelist.
@@ -41,10 +43,15 @@ There was both a :blanklist and :whitelist.
       end
     end
 
-    def set_rails_configure!
-      return unless defined?(Rails)
-      conf = YAML.load_file(Rails.root.join('config/deflectable.yml'))
-      self.options = options.merge(conf).merge(:logger => Rails.logger)
+    def load_config_file!
+      if defined?(Rails)
+        file = options[:config_path] || Rails.root.join('config/deflectable.yml')
+        loaded_config = YAML.load_file(file) rescue {}
+        loaded_config = loaded_config.merge(:logger => Rails.logger)
+      else
+        loaded_config = YAML.load_file(options[:config_path]) rescue {}
+      end
+      self.options = options.merge(loaded_config)
     rescue => e
       log e.message
     end
