@@ -3,7 +3,7 @@ module Deflectable
   class Watcher
     attr_accessor :options
 
-    def initialize(app, build_options = {})
+    def initialize(app, build_options={}, &block = nil)
       @app = app
       @filtering = nil
       @options = {
@@ -14,6 +14,7 @@ module Deflectable
         :whitelist => [],
         :blacklist => [],
       }.merge(build_options)
+      @options = @options.merge(block.call) if block_given?
       configure_check!
     end
 
